@@ -10,6 +10,7 @@ import top.wsure.bililiver.utils.JsonUtils.toMap
 import top.wsure.bililiver.utils.OkHttpUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import top.wsure.bililiver.bililiver.dtos.api.space.Space
 import top.wsure.bililiver.utils.UA
 
 object BiliLiverApi {
@@ -20,6 +21,8 @@ object BiliLiverApi {
     private const val TOKEN_AND_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={{real_room_id}}&type=0"
 
     private const val SEND_DANMU = "https://api.live.bilibili.com/msg/send"
+
+    private const val SPACE = "https://api.bilibili.com/x/space/acc/info?mid={{uid}}&jsonp=jsonp"
 
     fun getRealRoomId(roomId:String): Room?{
         val url = ROOM_INFO.replace("{{room_id}}", roomId)
@@ -50,5 +53,14 @@ object BiliLiverApi {
             "User-Agent" to UA.PC.getValue(),
             "referer" to "https://live.bilibili.com/$roomId"
         )
+    }
+
+    fun getSpace(uid:String):Space?{
+        val url = SPACE.replace("{{uid}}",uid)
+        val res = OkHttpUtils.getStr(url, mutableMapOf(
+            "User-Agent" to UA.PC.getValue(),
+        )).jsonToObjectOrNull<BiliResponse<Space>>()
+        logger.info("get space from ${uid}: ${if(res != null) "success" else "fail"}")
+        return res?.data
     }
 }
