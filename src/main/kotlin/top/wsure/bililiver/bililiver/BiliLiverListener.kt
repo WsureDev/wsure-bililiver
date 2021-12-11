@@ -44,14 +44,14 @@ class BiliLiverListener(
     var enterRoom = EnterRoom(room.roomid.toLong(),token)
     override fun onOpen(webSocket: WebSocket, response: Response) {
         logger.info("$logHeader onOpen ,send enterRoom package")
-        logger.debug("$logHeader enter room hex : ${enterRoom.toPackage().encode().hex()}")
+        logger.trace("$logHeader enter room hex : ${enterRoom.toPackage().encode().hex()}")
         webSocket.sendAndPrintLog(enterRoom.toPackage())
     }
 
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
         stopRetryReconnect()
         kotlin.runCatching{
-            logger.debug("$logHeader onMessage ,context:${bytes.hex() }")
+            logger.trace("$logHeader onMessage ,context:${bytes.hex() }")
             val originPkg = bytes.toChatPackage()
             val pkgList = mutableListOf<ChatPackage>()
             when(originPkg.protocolVersion){
@@ -64,7 +64,7 @@ class BiliLiverListener(
                 }
             }
             pkgList.onEach { pkg ->
-                logger.debug("$logHeader onMessage ${pkg.protocolVersion},${pkg.operation} ,context:${ pkg.content() }")
+                logger.trace("$logHeader onMessage ${pkg.protocolVersion},${pkg.operation} ,context:${ pkg.content() }")
                 when(pkg.operation){
                     Operation.HELLO_ACK -> {
                         initHeartbeat(webSocket)
@@ -104,7 +104,7 @@ class BiliLiverListener(
         val content = pkg.content()
 
         content.jsonToObjectOrNull<CmdType>()?.also { type ->
-            logger.info("$logHeader received ${type.cmd.description} :{}",content)
+            logger.debug("$logHeader received ${type.cmd.description} :{}",content)
             when(type.cmd){
                 NoticeCmd.INTERACT_WORD -> {
                     content.jsonToObjectOrNull<ChatCmdBody<InteractWord>>()?.also { interactWord ->
@@ -202,7 +202,7 @@ class BiliLiverListener(
     }
 
     private fun receivedHeartbeat(content:String) {
-        logger.info("$logHeader received heartbeat $content")
+        logger.trace("$logHeader received heartbeat $content")
         lastReceivedHeartBeat.getAndSet(System.currentTimeMillis())
     }
 
@@ -223,9 +223,9 @@ class BiliLiverListener(
 
     private fun WebSocket.sendAndPrintLog(pkg: ChatPackage, isHeartbeat:Boolean = false){
         if(isHeartbeat){
-            logger.info("$logHeader send Heartbeat ${pkg.content()}")
+            logger.trace("$logHeader send Heartbeat ${pkg.content()}")
         } else {
-            logger.info("$logHeader send text message ${pkg.content()}")
+            logger.debug("$logHeader send text message ${pkg.content()}")
         }
         this.send(pkg.encode())
     }
