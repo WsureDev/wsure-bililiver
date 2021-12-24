@@ -54,4 +54,8 @@ abstract class BiliLiverEvent {
     open fun onEntryEffect(entryEffect: EntryEffect) {
 
     }
+
+    open fun onVtrGiftLottery(vtrGiftLottery: VtrGiftLottery) {
+
+    }
 }

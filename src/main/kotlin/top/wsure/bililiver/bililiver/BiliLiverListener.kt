@@ -183,6 +183,13 @@ class BiliLiverListener(
                         }
                     }
                 }
+                NoticeCmd.VTR_GIFT_LOTTERY -> {
+                    content.jsonToObjectOrNull<ChatCmdBody<VtrGiftLottery>>()?.also { vtrGiftLottery ->
+                        biliLiverEvents.onEach {
+                            it.onVtrGiftLottery(vtrGiftLottery.data)
+                        }
+                    }
+                }
                 else -> {}
             }
         }

@@ -49,5 +49,7 @@ enum class NoticeCmd(val description:String ) {
     VOICE_JOIN_LIST(""),
     VOICE_JOIN_STATUS(""),
     VOICE_JOIN_ROOM_COUNT_INFO(""),
+
+    VTR_GIFT_LOTTERY("谷"),
     ;
 }
