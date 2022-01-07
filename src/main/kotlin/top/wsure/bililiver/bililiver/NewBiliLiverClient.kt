@@ -1,5 +1,10 @@
 package top.wsure.bililiver.bililiver
 
+import okhttp3.Response
+import okhttp3.WebSocket
+import okio.ByteString
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import top.wsure.bililiver.bililiver.BiliLiverChatUtils.brotli
 import top.wsure.bililiver.bililiver.BiliLiverChatUtils.toChatPackage
 import top.wsure.bililiver.bililiver.BiliLiverChatUtils.toChatPackageList
@@ -11,29 +16,21 @@ import top.wsure.bililiver.bililiver.dtos.event.cmd.DanmuMsg.Companion.toDanmuMs
 import top.wsure.bililiver.bililiver.enums.NoticeCmd
 import top.wsure.bililiver.bililiver.enums.Operation
 import top.wsure.bililiver.bililiver.enums.ProtocolVersion
-import top.wsure.bililiver.common.BaseBotListener
-import top.wsure.bililiver.utils.JsonUtils.jsonToObjectOrNull
-import top.wsure.bililiver.utils.ScheduleUtils
-import okhttp3.Response
-import okhttp3.WebSocket
-import okio.ByteString
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import top.wsure.bililiver.bililiver.dtos.event.cmd.EntryEffect
-import top.wsure.bililiver.bililiver.dtos.event.cmd.GuardBuy
-import top.wsure.bililiver.bililiver.dtos.event.cmd.HotRankSettlement
+import top.wsure.guild.common.client.WebsocketClient
+import top.wsure.guild.common.utils.JsonUtils.jsonToObjectOrNull
+import top.wsure.guild.common.utils.ScheduleUtils
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
-class BiliLiverListener(
+class NewBiliLiverClient(
     val room: Room,
     val token: String?,
-    val biliLiverEvents: List<BiliLiverEvent>,
-    val heartbeatDelay: Long,
-    val reconnectTimeout: Long,
-    retryTime:Long,
-    retryWait:Long,
-) : BaseBotListener(retryTime, retryWait) {
+    private val biliLiverEvents: List<BiliLiverEvent> = emptyList(),
+    private val wsUrl: String?,
+    private val heartbeatDelay: Long = 25000,
+    private val reconnectTimeout: Long = 50000,
+    private val retryWait: Long = 3000,
+) : WebsocketClient(wsUrl?:"wss://broadcastlv.chat.bilibili.com/sub", retryWait) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     private var hbTimer: Timer? = null
@@ -41,7 +38,12 @@ class BiliLiverListener(
 
     val logHeader = room.toRoomStr()
 
-    var enterRoom = EnterRoom(room.roomid.toLong(),token)
+    var enterRoom = EnterRoom(room.roomid.toLong(), token)
+
+    init {
+        biliLiverEvents.forEach { it.room = room }
+    }
+
     override fun onOpen(webSocket: WebSocket, response: Response) {
         logger.info("$logHeader onOpen ,send enterRoom package")
         logger.trace("$logHeader enter room hex : ${enterRoom.toPackage().encode().hex()}")
@@ -49,23 +51,23 @@ class BiliLiverListener(
     }
 
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-        stopRetryReconnect()
-        kotlin.runCatching{
-            logger.trace("$logHeader onMessage ,context:${bytes.hex() }")
+        connected()
+        kotlin.runCatching {
+            logger.trace("$logHeader onMessage ,context:${bytes.hex()}")
             val originPkg = bytes.toChatPackage()
             val pkgList = mutableListOf<ChatPackage>()
-            when(originPkg.protocolVersion){
-                ProtocolVersion.INT,ProtocolVersion.JSON -> pkgList.add(originPkg)
+            when (originPkg.protocolVersion) {
+                ProtocolVersion.INT, ProtocolVersion.JSON -> pkgList.add(originPkg)
                 ProtocolVersion.ZLIB_INFLATE -> pkgList.addAll(originPkg.body.zlib().toChatPackageList())
                 ProtocolVersion.BROTLI -> pkgList.addAll(originPkg.body.brotli().toChatPackageList())
                 else -> {
-                    logger.warn("onMessage : unknown Message  ,context:${bytes.hex() }")
+                    logger.warn("onMessage : unknown Message  ,context:${bytes.hex()}")
                     return
                 }
             }
             pkgList.onEach { pkg ->
-                logger.trace("$logHeader onMessage ${pkg.protocolVersion},${pkg.operation} ,context:${ pkg.content() }")
-                when(pkg.operation){
+                logger.trace("$logHeader onMessage ${pkg.protocolVersion},${pkg.operation} ,context:${pkg.content()}")
+                when (pkg.operation) {
                     Operation.HELLO_ACK -> {
                         initHeartbeat(webSocket)
                     }
@@ -86,17 +88,17 @@ class BiliLiverListener(
     }
 
     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-        logger.error("$logHeader onClosing , try to reconnect code:{} reason:{},",code,reason)
-        startRetryReconnect()
+        logger.error("$logHeader onClosing , try to reconnect code:{} reason:{},", code, reason)
+        reconnect()
     }
 
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-        logger.error("$logHeader onClosing , try to reconnect code:{} reason:{},",code,reason)
+        logger.error("$logHeader onClosing , try to reconnect code:{} reason:{},", code, reason)
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-        logger.error("$logHeader onFailure , try to reconnect",t)
-        startRetryReconnect()
+        logger.error("$logHeader onFailure , try to reconnect", t)
+        reconnect()
     }
 
 
@@ -104,8 +106,8 @@ class BiliLiverListener(
         val content = pkg.content()
 
         content.jsonToObjectOrNull<CmdType>()?.also { type ->
-            logger.debug("$logHeader received ${type.cmd.description} :{}",content)
-            when(type.cmd){
+            logger.debug("$logHeader received ${type.cmd.description} :{}", content)
+            when (type.cmd) {
                 NoticeCmd.INTERACT_WORD -> {
                     content.jsonToObjectOrNull<ChatCmdBody<InteractWord>>()?.also { interactWord ->
                         biliLiverEvents.onEach {
@@ -135,11 +137,12 @@ class BiliLiverListener(
                     }
                 }
                 NoticeCmd.ROOM_REAL_TIME_MESSAGE_UPDATE -> {
-                    content.jsonToObjectOrNull<ChatCmdBody<RoomRealTimeMessageUpdate>>()?.also { roomRealTimeMessageUpdate ->
-                        biliLiverEvents.onEach {
-                            it.onRoomRealTimeMessageUpdate(roomRealTimeMessageUpdate.data)
+                    content.jsonToObjectOrNull<ChatCmdBody<RoomRealTimeMessageUpdate>>()
+                        ?.also { roomRealTimeMessageUpdate ->
+                            biliLiverEvents.onEach {
+                                it.onRoomRealTimeMessageUpdate(roomRealTimeMessageUpdate.data)
+                            }
                         }
-                    }
                 }
                 NoticeCmd.ONLINE_RANK_TOP3 -> {
                     content.jsonToObjectOrNull<ChatCmdBody<OnlineRankTop3>>()?.also { onlineRankTop3 ->
@@ -169,7 +172,7 @@ class BiliLiverListener(
                         }
                     }
                 }
-                NoticeCmd.HOT_RANK_SETTLEMENT,NoticeCmd.HOT_RANK_SETTLEMENT_V2 -> {
+                NoticeCmd.HOT_RANK_SETTLEMENT, NoticeCmd.HOT_RANK_SETTLEMENT_V2 -> {
                     content.jsonToObjectOrNull<ChatCmdBody<HotRankSettlement>>()?.also { hotRankSettlement ->
                         biliLiverEvents.onEach {
                             it.onHotRankSettlement(hotRankSettlement.data)
@@ -190,46 +193,48 @@ class BiliLiverListener(
                         }
                     }
                 }
-                else -> {}
+                else -> {
+                }
             }
         }
     }
-    private fun initHeartbeat(webSocket:WebSocket) {
+
+    private fun initHeartbeat(webSocket: WebSocket) {
         lastReceivedHeartBeat.getAndSet(System.currentTimeMillis())
         val processor = createHeartBeatProcessor(webSocket)
         //  先取消以前的定时器
         hbTimer?.cancel()
         // 启动新的心跳
-        hbTimer = ScheduleUtils.loopEvent(processor,Date(),heartbeatDelay)
-    }
-    override fun cancel(){
-        super.cancel()
-        // do something cancel heartbeat
-        hbTimer?.cancel()
+        hbTimer = ScheduleUtils.loopEvent(processor, Date(), heartbeatDelay)
     }
 
-    private fun receivedHeartbeat(content:String) {
+    override fun disconnect() {
+        hbTimer?.cancel()
+        super.disconnect()
+    }
+
+    private fun receivedHeartbeat(content: String) {
         logger.trace("$logHeader received heartbeat $content")
         lastReceivedHeartBeat.getAndSet(System.currentTimeMillis())
     }
 
-    private fun createHeartBeatProcessor(webSocket: WebSocket):suspend () ->Unit {
+    private fun createHeartBeatProcessor(webSocket: WebSocket): suspend () -> Unit {
         return suspend {
             val last = lastReceivedHeartBeat.get()
             val now = System.currentTimeMillis()
-            if( now - last > reconnectTimeout){
+            if (now - last > reconnectTimeout) {
                 logger.warn("$logHeader heartbeat timeout , try to reconnect")
-                startRetryReconnect()
+                reconnect()
             } else {
-                webSocket.sendAndPrintLog(HeartbeatPackage,true)
+                webSocket.sendAndPrintLog(HeartbeatPackage, true)
 
             }
 
         }
     }
 
-    private fun WebSocket.sendAndPrintLog(pkg: ChatPackage, isHeartbeat:Boolean = false){
-        if(isHeartbeat){
+    private fun WebSocket.sendAndPrintLog(pkg: ChatPackage, isHeartbeat: Boolean = false) {
+        if (isHeartbeat) {
             logger.trace("$logHeader send Heartbeat ${pkg.content()}")
         } else {
             logger.debug("$logHeader send text message ${pkg.content()}")

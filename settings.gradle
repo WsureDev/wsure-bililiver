@@ -1,2 +1,3 @@
 rootProject.name = 'wsure-bililiver'
 
+includeBuild("../wsure-guild-common")

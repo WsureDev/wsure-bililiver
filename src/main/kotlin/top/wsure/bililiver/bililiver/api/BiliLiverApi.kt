@@ -5,13 +5,13 @@ import top.wsure.bililiver.bililiver.dtos.api.danmu.Danmu
 import top.wsure.bililiver.bililiver.dtos.api.danmu.DanmuRes
 import top.wsure.bililiver.bililiver.dtos.api.room.Room
 import top.wsure.bililiver.bililiver.dtos.api.token.TokenAndUrl
-import top.wsure.bililiver.utils.JsonUtils.jsonToObjectOrNull
-import top.wsure.bililiver.utils.JsonUtils.toMap
-import top.wsure.bililiver.utils.OkHttpUtils
+import top.wsure.guild.common.utils.JsonUtils.jsonToObjectOrNull
+import top.wsure.guild.common.utils.JsonUtils.toMap
+import top.wsure.guild.common.utils.OkHttpUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import top.wsure.bililiver.bililiver.dtos.api.space.Space
-import top.wsure.bililiver.utils.UA
+import top.wsure.guild.common.utils.UA
 
 object BiliLiverApi {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)

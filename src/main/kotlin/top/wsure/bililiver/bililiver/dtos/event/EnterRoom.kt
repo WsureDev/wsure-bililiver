@@ -2,7 +2,7 @@ package top.wsure.bililiver.bililiver.dtos.event
 
 import top.wsure.bililiver.bililiver.enums.Operation
 import top.wsure.bililiver.bililiver.enums.ProtocolVersion
-import top.wsure.bililiver.utils.JsonUtils.objectToJson
+import top.wsure.guild.common.utils.JsonUtils.objectToJson
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
