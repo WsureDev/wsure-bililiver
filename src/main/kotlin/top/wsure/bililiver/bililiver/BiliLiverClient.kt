@@ -1,5 +1,8 @@
 package top.wsure.bililiver.bililiver
 
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import okhttp3.Response
 import okhttp3.WebSocket
 import okio.ByteString
@@ -22,7 +25,7 @@ import top.wsure.guild.common.utils.ScheduleUtils
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
-class NewBiliLiverClient(
+class BiliLiverClient(
     val room: Room,
     val token: String?,
     private val biliLiverEvents: List<BiliLiverEvent> = emptyList(),
@@ -50,6 +53,7 @@ class NewBiliLiverClient(
         webSocket.sendAndPrintLog(enterRoom.toPackage())
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
         connected()
         kotlin.runCatching {
@@ -75,7 +79,9 @@ class NewBiliLiverClient(
                         receivedHeartbeat(pkg.content())
                     }
                     Operation.NOTICE -> {
-                        onNotice(pkg)
+                        GlobalScope.launch {
+                            onNotice(pkg)
+                        }
                     }
                     else -> {
                         logger.warn("$logHeader unhandled operation,${pkg.content()}")
@@ -102,7 +108,7 @@ class NewBiliLiverClient(
     }
 
 
-    private fun onNotice(pkg: ChatPackage) {
+    private suspend fun onNotice(pkg: ChatPackage) {
         val content = pkg.content()
 
         content.jsonToObjectOrNull<CmdType>()?.also { type ->

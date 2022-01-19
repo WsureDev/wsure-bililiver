@@ -8,54 +8,54 @@ abstract class BiliLiverEvent {
 
     lateinit var room: Room
 
-    open fun onSuperChatMessage(superChatMessage: SuperChatMessage){
+    open suspend fun onSuperChatMessage(superChatMessage: SuperChatMessage){
 
     }
-    open fun onSendGift(sendGift: SendGift){
-
-    }
-
-    open fun onComboSend(comboSend: ComboSend){
+    open suspend fun onSendGift(sendGift: SendGift){
 
     }
 
-    open fun onOnlineRankTop3(onlineRankTop3: OnlineRankTop3){
+    open suspend fun onComboSend(comboSend: ComboSend){
 
     }
 
-    open fun onRoomRealTimeMessageUpdate(roomRealTimeMessageUpdate: RoomRealTimeMessageUpdate){
+    open suspend fun onOnlineRankTop3(onlineRankTop3: OnlineRankTop3){
 
     }
 
-    open fun onRoomBlockMsg(roomBlockMsg:RoomBlockMsg){
+    open suspend fun onRoomRealTimeMessageUpdate(roomRealTimeMessageUpdate: RoomRealTimeMessageUpdate){
 
     }
 
-    open fun onSuperChatMessageDelete(superChatMessageDelete:SuperChatMessageDelete){
+    open suspend fun onRoomBlockMsg(roomBlockMsg:RoomBlockMsg){
 
     }
 
-    open fun onGuardBuy(guardBuy: GuardBuy){
+    open suspend fun onSuperChatMessageDelete(superChatMessageDelete:SuperChatMessageDelete){
 
     }
 
-    open fun onHotRankSettlement(hotRankSettlement: HotRankSettlement) {
+    open suspend fun onGuardBuy(guardBuy: GuardBuy){
 
     }
 
-    open fun onDanmuMsg(danmuMsg: DanmuMsg) {
+    open suspend fun onHotRankSettlement(hotRankSettlement: HotRankSettlement) {
 
     }
 
-    open fun onInteractWord(interactWord: InteractWord) {
+    open suspend fun onDanmuMsg(danmuMsg: DanmuMsg) {
 
     }
 
-    open fun onEntryEffect(entryEffect: EntryEffect) {
+    open suspend fun onInteractWord(interactWord: InteractWord) {
 
     }
 
-    open fun onVtrGiftLottery(vtrGiftLottery: VtrGiftLottery) {
+    open suspend fun onEntryEffect(entryEffect: EntryEffect) {
+
+    }
+
+    open suspend fun onVtrGiftLottery(vtrGiftLottery: VtrGiftLottery) {
 
     }
 }

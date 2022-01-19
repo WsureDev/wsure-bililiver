@@ -8,7 +8,7 @@ class BiliLiverConsole(roomId:String,eventList:List<BiliLiverEvent> = emptyList(
             BiliLiverApi.getTokenAndUrl(room.roomid)?.also { tokenAndUrl ->
                 val host = if(tokenAndUrl.hostList.isEmpty()) null else tokenAndUrl.hostList.map { it.toWssUrl() }.random()
 //                BiliLiverClient(room, tokenAndUrl.token ,eventList,host)
-                NewBiliLiverClient(room,tokenAndUrl.token ,eventList,host)
+                BiliLiverClient(room,tokenAndUrl.token ,eventList,host)
             }
         }
     }
