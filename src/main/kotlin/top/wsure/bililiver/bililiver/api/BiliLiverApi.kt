@@ -10,14 +10,15 @@ import top.wsure.guild.common.utils.JsonUtils.toMap
 import top.wsure.guild.common.utils.OkHttpUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import top.wsure.bililiver.bililiver.dtos.api.room.RoomInfo
 import top.wsure.bililiver.bililiver.dtos.api.space.Space
 import top.wsure.guild.common.utils.UA
 
 object BiliLiverApi {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-    private const val ROOM_INFO = "https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid={{room_id}}"
-
+    private const val ROOM_NEWS = "https://api.live.bilibili.com/room_ex/v1/RoomNews/get?roomid={{room_id}}"
+    private const val ROOM_INFO = "https://api.live.bilibili.com/room/v1/Room/get_info?id={{room_id}}"
     private const val TOKEN_AND_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={{real_room_id}}&type=0"
 
     private const val SEND_DANMU = "https://api.live.bilibili.com/msg/send"
@@ -25,11 +26,18 @@ object BiliLiverApi {
     private const val SPACE = "https://api.bilibili.com/x/space/acc/info?mid={{uid}}&jsonp=jsonp"
 
     fun getRealRoomId(roomId:String): Room?{
-        val url = ROOM_INFO.replace("{{room_id}}", roomId)
+        val url = ROOM_NEWS.replace("{{room_id}}", roomId)
         val res = OkHttpUtils.getJson(url, getApiHeader(roomId)).jsonToObjectOrNull<BiliResponse<Room>>()
         logger.info("$roomId getRealRoomId ${if(res != null) "success" else "fail"}")
         return res?.data
     }
+    fun getRoomInfo(roomId:String): RoomInfo?{
+        val url = ROOM_INFO.replace("{{room_id}}", roomId)
+        val res = OkHttpUtils.getJson(url, getApiHeader(roomId)).jsonToObjectOrNull<BiliResponse<RoomInfo>>()
+        logger.info("$roomId getRoomInfo ${if(res != null) "success" else "fail"}")
+        return res?.data
+    }
+
     fun getTokenAndUrl(realRoomId:String): TokenAndUrl?{
         val url = TOKEN_AND_URL.replace("{{real_room_id}}", realRoomId)
         val res = OkHttpUtils.getJson(url, mutableMapOf("User-Agent" to UA.PC.getValue()))

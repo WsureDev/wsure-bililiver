@@ -3,8 +3,8 @@ package top.wsure.bililiver.bililiver
 import top.wsure.bililiver.bililiver.dtos.event.ChatPackage
 import top.wsure.bililiver.bililiver.enums.Operation
 import top.wsure.bililiver.bililiver.enums.ProtocolVersion
-import com.aayushatharva.brotli4j.Brotli4jLoader
-import com.aayushatharva.brotli4j.decoder.BrotliInputStream
+import com.nixxcode.jvmbrotli.common.BrotliLoader
+import com.nixxcode.jvmbrotli.dec.BrotliInputStream
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import java.io.ByteArrayInputStream
@@ -13,6 +13,9 @@ import java.util.zip.InflaterOutputStream
 import kotlin.math.pow
 
 object BiliLiverChatUtils {
+    init {
+        BrotliLoader.isBrotliAvailable();
+    }
 
     fun ByteString.toChatPackage(): ChatPackage {
         if (this.size < 16) throw RuntimeException(" unknown package ")
@@ -62,7 +65,7 @@ object BiliLiverChatUtils {
     fun ByteArray.brotli(): ByteArray {
         val inputStream = ByteArrayInputStream(this)
         val outputStream = ByteArrayOutputStream()
-        Brotli4jLoader.ensureAvailability()
+
         val brotliInputStream = BrotliInputStream(inputStream)
         var read = brotliInputStream.read()
         while (read > -1) {
