@@ -68,7 +68,9 @@ data class RoomInfo(
 object LocalDateTimeSerializer:KSerializer<LocalDateTime>{
     private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     override fun deserialize(decoder: Decoder): LocalDateTime {
-        return LocalDateTime.parse(decoder.decodeString(), formatter)
+        return kotlin.runCatching {
+            LocalDateTime.parse(decoder.decodeString(), formatter)
+        }.getOrElse { LocalDateTime.now() }
     }
 
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("roomInfoLocalDateTime", PrimitiveKind.STRING)

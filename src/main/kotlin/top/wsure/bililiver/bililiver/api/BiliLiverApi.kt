@@ -10,6 +10,8 @@ import top.wsure.guild.common.utils.JsonUtils.toMap
 import top.wsure.guild.common.utils.OkHttpUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import top.wsure.bililiver.bililiver.dtos.api.dynamic.BiliDynamic
+import top.wsure.bililiver.bililiver.dtos.api.dynamic.DynamicCard
 import top.wsure.bililiver.bililiver.dtos.api.room.RoomInfo
 import top.wsure.bililiver.bililiver.dtos.api.space.Space
 import top.wsure.guild.common.utils.UA
@@ -25,6 +27,7 @@ object BiliLiverApi {
 
     private const val SPACE = "https://api.bilibili.com/x/space/acc/info?mid={{uid}}&jsonp=jsonp"
 
+    private const val DYNAMIC = "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?visitor_uid=0&host_uid={{host_uid}}&offset_dynamic_id={{offset_dynamic_id}}&need_top={{need_top}}&platform=web"
     fun getRealRoomId(roomId:String): Room?{
         val url = ROOM_NEWS.replace("{{room_id}}", roomId)
         val res = OkHttpUtils.getJson(url, getApiHeader(roomId)).jsonToObjectOrNull<BiliResponse<Room>>()
@@ -71,4 +74,25 @@ object BiliLiverApi {
         logger.info("get space from ${uid}: ${if(res != null) "success" else "fail"}")
         return res?.data
     }
+
+    fun getDynamicTopList(uid:String,offsetDynamicId:String = "0",needTop:Boolean = true): List<DynamicCard>{
+        val res = getBiliDynamic(uid, offsetDynamicId, needTop)
+        return if (res == null || res.cards.isNullOrEmpty()) emptyList() else res.cards
+    }
+
+
+    fun getBiliDynamic(uid:String,offsetDynamicId:String = "0",needTop:Boolean = true): BiliDynamic?{
+        val url = DYNAMIC.replace("{{host_uid}}",uid)
+            .replace("{{offset_dynamic_id}}",offsetDynamicId)
+            .replace("{{need_top}}", if(needTop) "1" else "0")
+        logger.info(" url :$url")
+        val text = OkHttpUtils.getStr(url, mutableMapOf(
+            "User-Agent" to UA.PC.getValue(),
+        ))
+        val res = text.jsonToObjectOrNull<BiliResponse<BiliDynamic>>()
+        logger.info("get Dynamic from ${uid}: ${if(res != null) "success" else "fail"}")
+        return res?.data
+    }
+
+
 }
