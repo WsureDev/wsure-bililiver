@@ -51,5 +51,7 @@ enum class NoticeCmd(val description:String ) {
     VOICE_JOIN_ROOM_COUNT_INFO(""),
 
     VTR_GIFT_LOTTERY("谷"),
+
+    WATCHED_CHANGE("观看人数")
     ;
 }

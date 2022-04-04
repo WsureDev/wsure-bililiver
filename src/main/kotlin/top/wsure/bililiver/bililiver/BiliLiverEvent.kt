@@ -58,4 +58,12 @@ abstract class BiliLiverEvent {
     open suspend fun onVtrGiftLottery(vtrGiftLottery: VtrGiftLottery) {
 
     }
+
+    open suspend fun onUserToastMsg(userToastMsg: UserToastMsg) {
+
+    }
+
+    open suspend fun onWatchedChange(watchedChange: WatchedChange) {
+
+    }
 }

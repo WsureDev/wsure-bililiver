@@ -1,7 +1,18 @@
 package top.wsure.bililiver.bililiver.dtos.api.dynamic
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import top.wsure.guild.common.utils.TimeUtils.toEpochSecond
+import top.wsure.guild.common.utils.TimeUtils.toLocalDateTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 @Serializable
@@ -70,7 +81,8 @@ data class Desc(
     @SerialName("stype")
     val stype: Long? = null,
     @SerialName("timestamp")
-    val timestamp: Long? = null,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val timestamp: LocalDateTime,
     @SerialName("type")
     val type: Long? = null,
     @SerialName("uid")
@@ -79,7 +91,20 @@ data class Desc(
     val uidType: Long? = null,
     @SerialName("view")
     val view: Long? = null
-)
+){
+    object LocalDateTimeSerializer: KSerializer<LocalDateTime> {
+        override fun deserialize(decoder: Decoder): LocalDateTime {
+            return kotlin.runCatching { decoder.decodeLong().toLocalDateTime() }.getOrElse { LocalDateTime.now() }
+        }
+
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BiliDynamicTimestamp", PrimitiveKind.STRING)
+
+        override fun serialize(encoder: Encoder, value: LocalDateTime) {
+            encoder.encodeLong(value.toEpochSecond())
+        }
+
+    }
+}
 
 @Serializable
 data class Extension(

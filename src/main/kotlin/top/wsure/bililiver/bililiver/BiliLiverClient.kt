@@ -36,6 +36,7 @@ class BiliLiverClient(
 ) : WebsocketClient(wsUrl?:"wss://broadcastlv.chat.bilibili.com/sub", retryWait) {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
+    private val filter : Set<NoticeCmd> = mutableSetOf(NoticeCmd.INTERACT_WORD)
     private var hbTimer: Timer? = null
     private val lastReceivedHeartBeat = AtomicLong(0)
 
@@ -112,7 +113,9 @@ class BiliLiverClient(
         val content = pkg.content()
 
         content.jsonToObjectOrNull<CmdType>()?.also { type ->
-            logger.debug("$logHeader received ${type.cmd.description} :{}", content)
+            if(!filter.contains(type.cmd)){
+                logger.debug("$logHeader received ${type.cmd.description} :{}", content)
+            }
             when (type.cmd) {
                 NoticeCmd.INTERACT_WORD -> {
                     content.jsonToObjectOrNull<ChatCmdBody<InteractWord>>()?.also { interactWord ->
@@ -164,6 +167,14 @@ class BiliLiverClient(
                         }
                     }
                 }
+                NoticeCmd.USER_TOAST_MSG -> {
+                    content.jsonToObjectOrNull<ChatCmdBody<UserToastMsg>>()?.also { userToastMsg ->
+                        biliLiverEvents.onEach {
+                            it.onUserToastMsg(userToastMsg.data)
+                        }
+                    }
+                }
+
                 NoticeCmd.ROOM_BLOCK_MSG -> {
                     content.jsonToObjectOrNull<ChatCmdBody<RoomBlockMsg>>()?.also { roomBlockMsg ->
                         biliLiverEvents.onEach {
@@ -199,7 +210,15 @@ class BiliLiverClient(
                         }
                     }
                 }
+                NoticeCmd.WATCHED_CHANGE -> {
+                    content.jsonToObjectOrNull<ChatCmdBody<WatchedChange>>()?.also { watchedChange ->
+                        biliLiverEvents.onEach {
+                            it.onWatchedChange(watchedChange.data)
+                        }
+                    }
+                }
                 else -> {
+                    logger.debug("$logHeader received unhandled type:${type.cmd.description}")
                 }
             }
         }
